@@ -1,6 +1,7 @@
 from flask import jsonify, url_for
 
 class APIException(Exception):
+    #logra que el error va a ser ignorado... te avisa del error pero el servidor sigue corriendo en el fondo
     status_code = 400
 
     def __init__(self, message, status_code=None, payload=None):
