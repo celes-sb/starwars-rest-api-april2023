@@ -259,12 +259,12 @@ def add_favorite_people():
     
     user = User.query.get(user_id)
     if not user:
-        raise APIException('Not Found', status_code=404)
+        raise APIException('Favorite People Not Found', status_code=404)
 
     favorite_exist = FavoritePeople.query.filter_by(user_id = user.id, people_id = character.id).first() is not None
     
     if favorite_exist:
-        raise APIException('Favorite already exists in user account', status_code=404)
+        raise APIException('Favorite people already exists in user account', status_code=404)
 
     favorite_people = FavoritePeople(user_id = user.id, people_id = character.id)
     db.session.add(favorite_people)
@@ -272,7 +272,61 @@ def add_favorite_people():
 
     return jsonify(favorite_people.serialize()), 201
 
-#APIS FAVORITE PEOPLE --------------------------------------------
+#APIS FAVORITES PLANET --------------------------------------------
+
+@app.route('/add-favorite/planet', methods=['POST'])
+def add_favorite_planet():
+    body = request.get_json()
+    user_id = body['user_id']
+    planet_id = body['planet_id']
+
+    planet = Planet.query.get(planet_id) #cuando encuentra el primero, detiene la busqueda => .first()
+    if not planet: #validacion de errores, obligatorio
+        raise APIException('Planet not found', status_code=404)
+    
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+
+    favorite_exist = FavoritePlanet.query.filter_by(user_id = user.id, planet_id = planet.id).first() is not None
+    
+    if favorite_exist:
+        raise APIException('Favorite planet already exists in user account', status_code=404)
+
+    favorite_planet = FavoritePlanet(user_id = user.id, planet_id = planet.id)
+    db.session.add(favorite_planet)
+    db.session.commit()
+
+    return jsonify(favorite_planet.serialize()), 201
+
+#APIS FAVORITES VEHICLE --------------------------------------------
+
+@app.route('/add-favorite/vehicle', methods=['POST'])
+def add_favorite_vehicle():
+    body = request.get_json()
+    user_id = body['user_id']
+    vehicle_id = body['vehicle_id']
+
+    vehicle = Vehicle.query.get(vehicle_id) #cuando encuentra el primero, detiene la busqueda => .first()
+    if not vehicle: #validacion de errores, obligatorio
+        raise APIException('Vehicle not found', status_code=404)
+    
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('User not found', status_code=404)
+
+    favorite_exist = FavoriteVehicle.query.filter_by(user_id = user.id, vehicle_id = vehicle.id).first() is not None
+    
+    if favorite_exist:
+        raise APIException('Favorite vehicle already exists in user account', status_code=404)
+
+    favorite_vehicle = FavoriteVehicle(user_id = user.id, vehicle_id = vehicle.id)
+    db.session.add(favorite_vehicle)
+    db.session.commit()
+
+    return jsonify(favorite_vehicle.serialize()), 201
+
+#APIS FAVORITES ALL --------------------------------------------
 @app.route('/favorites', methods=['POST'])
 def list_favorites():
     body = request.get_json()
@@ -290,9 +344,11 @@ def list_favorites():
     user_favorites_final = list(map(lambda item: item.serialize(), user_favorites))
 
     user_favorites_planets = FavoritePlanet.query.filter_by(user_id = user.id).all()
+    user_favorites_final_planets = list(map(lambda item: item.serialize(), user_favorites_planets))
+
     user_favorites_vehicle = FavoriteVehicle.query.filter_by(user_id = user.id).all()
-    user_favorites_final_planets = list(map(lambda item: item.serialize(), user_favorites))
-    user_favorites_final_vehicle = list(map(lambda item: item.serialize(), user_favorites))
+    user_favorites_final_vehicle = list(map(lambda item: item.serialize(), user_favorites_vehicle))
+    
     user_favorites_final = user_favorites_final + user_favorites_final_planets + user_favorites_final_vehicle
 
     return jsonify(user_favorites_final), 201

@@ -104,8 +104,6 @@ class FavoriteVehicle(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "user_name": User.query.get(self.user_id).serialize()["name"],
-            "user": User.query.get(self.user_id).serialize(),
             "vehicle": Vehicle.query.get(self.vehicle_id).serialize()
         }
 
