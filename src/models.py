@@ -10,7 +10,10 @@ class User(db.Model):
     password = db.Column(db.String(250), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
     name = db.Column(db.String(120), unique=False, nullable=False)
-
+    favorite_people = db.relationship('FavoritePeople', backref = 'user', lazy=True)
+    favorite_vehicle = db.relationship('FavoriteVehicle', backref = 'user', lazy=True)
+    favorite_planet = db.relationship('FavoritePlanet', backref = 'user', lazy=True)
+    
     #cambia la ubicacion de la memoria
     def __repr__(self):
         return '<User %r>' % self.name
@@ -33,6 +36,7 @@ class People(db.Model):
     eye_color = db.Column(db.String(50), unique=False, nullable=False)
     birth_year = db.Column(db.String(50), unique=False, nullable=False)
     gender = db.Column(db.String(50), unique=False, nullable=False)
+    favorite_people = db.relationship('FavoritePeople', backref = 'people', lazy=True)
 
     def serialize(self):
         return {
@@ -48,6 +52,25 @@ class People(db.Model):
             # do not serialize the password, its a security breach
         }
 
+class FavoritePeople(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    people_id = db.Column(db.Integer, db.ForeignKey('people.id'), nullable=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "people_id": self.people_id,
+            "people_name": People.query.get(self.people_id).serialize()["name"],
+            "user_name": User.query.get(self.user_id).serialize()["name"],
+            "user": User.query.get(self.user_id).serialize(),
+            "people": People.query.get(self.people_id).serialize()
+        }
+#recomendacion separar los favoritos en tablas distintas
+# new_favorite = FavoritePeople(user_id = db.Column....., )
+# new_favorite.user -> obtengo toda la info del usuario q tiene a ese favorito en su lista y tmb obtengo sus metodos (serialize)
+
 class Vehicle(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(250), unique=True, nullable=False)
@@ -57,6 +80,7 @@ class Vehicle(db.Model):
     length = db.Column(db.Integer, unique=False, nullable=False)
     crew = db.Column(db.Integer, unique=False, nullable=False)
     passengers = db.Column(db.Integer, unique=False, nullable=False)
+    favorite_vehicle = db.relationship('FavoriteVehicle', backref = 'vehicle', lazy=True)
 
     def serialize(self):
         return {
@@ -71,6 +95,24 @@ class Vehicle(db.Model):
             # do not serialize the password, its a security breach
         }
 
+class FavoriteVehicle(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'), nullable=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": User.query.get(self.user_id).serialize()["name"],
+            "user": User.query.get(self.user_id).serialize(),
+            "vehicle": Vehicle.query.get(self.vehicle_id).serialize()
+        }
+
+#recomendacion separar los favoritos en tablas distintas
+# new_favorite = FavoritePeople(user_id = db.Column....., )
+# new_favorite.user -> obtengo toda la info del usuario q tiene a ese favorito en su lista y tmb obtengo sus metodos (serialize)
+
 class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
@@ -82,6 +124,7 @@ class Planet(db.Model):
     climate = db.Column(db.String(50), unique=False, nullable=False)
     terrain = db.Column(db.String(50), unique=False, nullable=False)
     surface_water = db.Column(db.String(50), unique=False, nullable=False)
+    favorite_planet = db.relationship('FavoritePlanet', backref = 'planet', lazy=True)
 
     def serialize(self):
         return {
@@ -96,4 +139,17 @@ class Planet(db.Model):
             "terrain": self.terrain,
             "surface_water": self.surface_water
             # do not serialize the password, its a security breach
+        }
+
+class FavoritePlanet(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user": User.query.get(self.user_id).serialize(),
+            "planet": Planet.query.get(self.planet_id).serialize()
         }

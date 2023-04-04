@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, People, Planet, Vehicle
+from models import db, User, People, Planet, Vehicle, FavoritePeople, FavoritePlanet, FavoriteVehicle
 #from models import Person
 
 app = Flask(__name__)
@@ -245,6 +245,57 @@ def edit_vehicle():
     db.session.commit()
 
     return jsonify(vehicle.serialize()), 200 
+
+#APIS FAVORITE PEOPLE --------------------------------------------
+@app.route('/add-favorite/people', methods=['POST'])
+def add_favorite_people():
+    body = request.get_json()
+    user_id = body['user_id']
+    people_id = body['people_id']
+
+    character = People.query.get(people_id) #cuando encuentra el primero, detiene la busqueda => .first()
+    if not character: #validacion de errores, obligatorio
+        raise APIException('Not found', status_code=404)
+    
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException('Not Found', status_code=404)
+
+    favorite_exist = FavoritePeople.query.filter_by(user_id = user.id, people_id = character.id).first() is not None
+    
+    if favorite_exist:
+        raise APIException('Favorite already exists in user account', status_code=404)
+
+    favorite_people = FavoritePeople(user_id = user.id, people_id = character.id)
+    db.session.add(favorite_people)
+    db.session.commit()
+
+    return jsonify(favorite_people.serialize()), 201
+
+#APIS FAVORITE PEOPLE --------------------------------------------
+@app.route('/favorites', methods=['POST'])
+def list_favorites():
+    body = request.get_json()
+    user_id = body["user_id"]
+
+    if not user_id:
+        raise APIException('Data missing', status_code=404)
+
+    user = User.query.get(user_id)
+
+    if not user:
+        raise APIException('User not found', status_code=404)
+
+    user_favorites = FavoritePeople.query.filter_by(user_id = user.id).all() #nos devuelve todas las coincidencias
+    user_favorites_final = list(map(lambda item: item.serialize(), user_favorites))
+
+    user_favorites_planets = FavoritePlanet.query.filter_by(user_id = user.id).all()
+    user_favorites_vehicle = FavoriteVehicle.query.filter_by(user_id = user.id).all()
+    user_favorites_final_planets = list(map(lambda item: item.serialize(), user_favorites))
+    user_favorites_final_vehicle = list(map(lambda item: item.serialize(), user_favorites))
+    user_favorites_final = user_favorites_final + user_favorites_final_planets + user_favorites_final_vehicle
+
+    return jsonify(user_favorites_final), 201
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
